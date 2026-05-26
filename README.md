@@ -1,0 +1,47 @@
+# Union config action
+
+Denne actionen lar deg konfigurere service accounts og egress regler for trafikk fra Union tasks. Spesifiser en ressurs av typen `UnionTeamServiceAccount` som under:
+
+`utsa.yaml`:
+```yaml
+apiVersion: data.nav.no/v1alpha1
+kind: UnionTeamServiceAccounts
+metadata:
+  name: union-team-eksempel
+  namespace: ${prosjekt}-${domene}
+spec:
+  domain: development
+  project: eksempel
+  serviceAccounts:
+  - externalAllowlist:
+    - host: hest.no
+    internalAllowlist:
+    - host: a01dbfl039.adeo.no
+    name: sa1
+  - externalAllowlist:
+    - host: example.com
+    name: sa2
+```
+
+>Prosjekt over er `Union prosjekt` og domene er `development, staging eller production`
+
+Denne kan så applies til clusteret med gitub action som eksempelet under:
+
+```yaml
+name: Apply Union configuration
+
+on:
+  push:
+
+jobs:
+  apply-union-config:
+    name: Apply Union configuration
+    runs-on: [self-hosted, union-dev]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - uses: navikt/union-config@v1
+        with:
+          manifest: utsa.yaml
+```
