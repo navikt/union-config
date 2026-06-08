@@ -37,6 +37,10 @@ jobs:
   apply-union-config:
     name: Apply Union configuration
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
