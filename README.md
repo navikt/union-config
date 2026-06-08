@@ -36,7 +36,7 @@ on:
 jobs:
   apply-union-config:
     name: Apply Union configuration
-    runs-on: [self-hosted, union-dev]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
