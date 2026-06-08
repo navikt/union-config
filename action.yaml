@@ -6,33 +6,74 @@ inputs:
     description: Union Team Service Accounts manifest file path, relative to the repository root.
     required: true
   environment:
-    description: Target environment (e.g. dev, prod).
-    required: true
+    description: "Internal, platform team only. Target GCP environment, 'dev' or 'prod'. Consumers should leave this as the default ('prod')."
+    required: false
     default: prod
 
 runs:
   using: composite
   steps:
+    - id: config
+      name: Validate inputs and resolve environment configuration
+      shell: bash
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        REPOSITORY: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+
+        case "$ENVIRONMENT" in
+          prod)
+            provider="projects/430580391891/locations/global/workloadIdentityPools/ci-dataplattform/providers/ci-dataplattform"
+            ;;
+          dev)
+            provider="projects/483437874962/locations/global/workloadIdentityPools/ci-dataplattform/providers/ci-dataplattform"
+            ;;
+          *)
+            echo "::error::Invalid environment '$ENVIRONMENT' - must be 'dev' or 'prod'." >&2
+            exit 1
+            ;;
+        esac
+
+        repo="${REPOSITORY##*/}"
+        # GSA account_id is capped at 30 chars; terraform truncates the repo to 26 ("um-" prefix = 3).
+        sa_repo="${repo:0:26}"
+
+        {
+          echo "provider=${provider}"
+          echo "service_account=um-${sa_repo}@nav-data-union-restricted-${ENVIRONMENT}.iam.gserviceaccount.com"
+          echo "cluster=${ENVIRONMENT}-union-restricted"
+          echo "project=nav-data-union-control-${ENVIRONMENT}"
+        } >> "$GITHUB_OUTPUT"
+
     - id: auth
       name: Authenticate with Google Cloud
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
       with:
         token_format: access_token
-        workload_identity_provider: ${{ inputs.environment == 'prod' && 'projects/430580391891/locations/global/workloadIdentityPools/ci-dataplattform/providers/ci-dataplattform' || 'projects/483437874962/locations/global/workloadIdentityPools/ci-dataplattform/providers/ci-dataplattform' }}
-        service_account: um-${{ github.event.repository.name }}@nav-data-union-restricted-${{ inputs.environment }}.iam.gserviceaccount.com
+        workload_identity_provider: ${{ steps.config.outputs.provider }}
+        service_account: ${{ steps.config.outputs.service_account }}
+
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
       with:
-        install_components: gke-gcloud-auth-plugin
+        install_components: gke-gcloud-auth-plugin,kubectl
 
-    - name: Get cluster credentials 
+    - name: Get cluster credentials
       shell: bash
+      env:
+        CLUSTER: ${{ steps.config.outputs.cluster }}
+        PROJECT: ${{ steps.config.outputs.project }}
       run: |
+        set -euo pipefail
         gcloud container fleet memberships get-credentials \
-          "${{ inputs.environment }}-union-restricted" \
-          --project "nav-data-union-control-${{ inputs.environment }}"
+          "$CLUSTER" \
+          --project "$PROJECT"
 
     - name: Apply Union Team Service Accounts manifest
       shell: bash
+      env:
+        MANIFEST: ${{ inputs.manifest }}
       run: |
-        kubectl apply -f "${{ inputs.manifest }}"
+        set -euo pipefail
+        kubectl apply --server-side -f "$MANIFEST"
