@@ -76,5 +76,6 @@ runs:
         MANIFEST: ${{ inputs.manifest }}
       run: |
         set -euo pipefail
+        yq -i '.metadata.annotations["data.nav.no/github.repository"] = ${{ github.repository }}' "$MANIFEST"
         kubectl apply --server-side -f "$MANIFEST"
         kubectl annotate -f "$MANIFEST" data.nav.no/github.actor=${{ github.actor }}
