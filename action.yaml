@@ -80,6 +80,5 @@ runs:
         yq -i '.metadata.annotations["data.nav.no/github.actor"] = "${{ github.actor }}"' "$MANIFEST"
         yq -i '.metadata.annotations["data.nav.no/github.triggering_actor"] = "${{ github.triggering_actor }}"' "$MANIFEST"
         yq -i '.metadata.annotations["data.nav.no/github.sha"] = "${{ github.sha }}"' "$MANIFEST"
-        yq -i '.metadata.annotations["data.nav.no/github.event"] = "${{ github.event }}"' "$MANIFEST"
 
         kubectl apply --server-side -f "$MANIFEST"
