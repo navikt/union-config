@@ -77,4 +77,4 @@ runs:
       run: |
         set -euo pipefail
         kubectl apply --server-side -f "$MANIFEST"
-        kubectl annotate -f "$MANIFEST" "data.nav.no/union-config/github.actor"="${{ github.actor }}"
+        kubectl annotate -f "$MANIFEST" data.nav.no/union-config/github.actor=${{ github.actor }}
