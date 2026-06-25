@@ -78,7 +78,10 @@ runs:
         set -euo pipefail
         yq -i '.metadata.annotations["data.nav.no/github.repository"] = "${{ github.repository }}"' "$MANIFEST"
         yq -i '.metadata.annotations["data.nav.no/github.actor"] = "${{ github.actor }}"' "$MANIFEST"
-        yq -i '.metadata.annotations["data.nav.no/github.triggering_actor"] = "${{ github.triggering_actor }}"' "$MANIFEST"
         yq -i '.metadata.annotations["data.nav.no/github.sha"] = "${{ github.sha }}"' "$MANIFEST"
+        
+        # Force overwrite user configured namespace with concatenation of project and domain from the 
+        # UnionTeamServiceAccount manifest spec.
+        yq -i '.metadata.namespace = .spec.project + "-" + .spec.domain' "$MANIFEST" 
 
         kubectl apply --server-side -f "$MANIFEST"
