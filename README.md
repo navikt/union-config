@@ -8,7 +8,6 @@ apiVersion: data.nav.no/v1alpha1
 kind: UnionTeamServiceAccounts
 metadata:
   name: union-team-eksempel
-  namespace: ${prosjekt}-${domene}
 spec:
   domain: development
   project: eksempel
@@ -45,7 +44,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
-      - uses: navikt/union-config@v1
+      - uses: navikt/union-config@v2
         with:
           manifest: utsa.yaml
 ```
